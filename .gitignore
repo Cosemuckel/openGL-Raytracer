@@ -32,9 +32,8 @@
 *.out
 *.app
 
-# Build folders
-bin/
-bin-int/
+# Build folder
+Renderer/build/
 
 ### VisualStudio ###
 # Ignore .vs folder

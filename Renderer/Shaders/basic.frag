@@ -1,6 +1,6 @@
 #version 330 core
 
-in vec3 gl_FragCoord;
+in vec2 gl_FragCoord;
 out vec4 fragColor;
 
 struct Material {
@@ -26,6 +26,15 @@ struct Triangle {
 	
 	vec3 v2;
 	float pad2;
+
+	vec3 edge1;
+	float pad3;
+
+	vec3 edge2;
+	float pad4;
+
+	vec3 normal;
+	float pad5;
 
 	Material material;
 };
@@ -73,9 +82,7 @@ struct Intersection {
 	vec3 position;
 };
 
-Intersection raySphere(Ray ray, Sphere sphere) {	
-	Intersection intersection;
-	intersection.dst = -1;
+void raySphere(Ray ray, Sphere sphere, inout Intersection intersection) {
 
 	vec3 oc = ray.origin - sphere.center;
 
@@ -92,56 +99,63 @@ Intersection raySphere(Ray ray, Sphere sphere) {
 	intersection.normal = normalize(intersection.position - sphere.center);
 	intersection.material = sphere.material;
 
-	return intersection;
 }
 
-Intersection rayTriangle(Ray ray, Triangle triangle) {
-	Intersection intersection;
-	intersection.dst = -1;
+void rayTriangle(Ray ray, Triangle triangle, inout Intersection intersection) {
+	vec3 edge1 = triangle.edge1;
+	vec3 edge2 = triangle.edge2;
 
-	vec3 e1 = triangle.v2 - triangle.v1;
-	vec3 e2 = triangle.v0 - triangle.v2;
-	vec3 e3 = triangle.v1 - triangle.v0;
+	vec3 p = cross(ray.direction, edge2);
+	float det = dot(edge1, p);
 
-	vec3 n = cross(e1, e2);
-	float p = dot(n, triangle.v0);
+	if (abs(det) < 10e-6) return;
 
-	float dst = (p - dot(n, ray.origin)) / dot(n, ray.direction);
-
-	vec3 point = ray.origin + dst * ray.direction;
-
-	vec3 c1 = cross(e1, point - triangle.v1);
-	vec3 c2 = cross(e2, point - triangle.v2);
-	vec3 c3 = cross(e3, point - triangle.v0);
+	float invDet = 1.0f / det;
+	vec3 t = ray.origin - triangle.v0;
 	
-	if (dot(n, c1) >= 0 && dot(n, c2) >= 0 && dot(n, c3) >= 0) {
-		intersection.dst = dst;
-		intersection.material = triangle.material;
-		intersection.position = point;
-		intersection.normal = normalize(n);
-	}
+	float u = dot(t, p);
+
+	if (det < u || u < 0.0f) return;
 	
-	return intersection;	
+	u *= invDet;
+
+	vec3 q = cross(t, edge1);	
+	
+	float v = dot(ray.direction, q) * invDet;
+
+	if (v < 0.0f || u + v > 1.0f) return;
+
+	float dst = dot(edge2, q) * invDet;
+
+	intersection.dst = dst;
+	intersection.material = triangle.material;
+	intersection.position = ray.origin + dst * ray.direction;
+	intersection.normal = triangle.normal;
 }
 
 Intersection rayScene(Ray ray) {
 
 	Intersection closestIntersection;
+	Intersection currentIntersection;
+	
 	closestIntersection.dst = -1;
 
 	for (int i = 0; i < numSpheres; ++i) {
-		Intersection intersection = raySphere(ray, spheres[i]);
+		raySphere(ray, spheres[i], currentIntersection);
 
-		if (intersection.dst > 0 && (closestIntersection.dst < 0 || intersection.dst < closestIntersection.dst)) {
-			closestIntersection = intersection;
+		if (currentIntersection.dst > 0 && (closestIntersection.dst < 0 || currentIntersection.dst < closestIntersection.dst)) {
+			closestIntersection = currentIntersection;
 		}
 	}
 
 	for (int i = 0; i < numTriagngles; ++i) {
-		Intersection intersection = rayTriangle(ray, triangles[i]);
 
-		if (intersection.dst > 0 && (closestIntersection.dst < 0 || intersection.dst < closestIntersection.dst)) {
-			closestIntersection = intersection;
+		currentIntersection.dst = -1;
+
+		rayTriangle(ray, triangles[i], currentIntersection);
+
+		if (currentIntersection.dst > 0 && (closestIntersection.dst < 0 || currentIntersection.dst < closestIntersection.dst)) {
+			closestIntersection = currentIntersection;
 		}
 	}
 	
@@ -184,11 +198,11 @@ vec3 trace(Ray ray, inout uint seed) {
 	vec3 rayColor = vec3(1.f);
 	vec3 totalLight = vec3(0.f);
 
-	for (int i = 0; i < maxBounces; i++) {
+	for (int i = 0; i < maxBounces; ++i) {
 		Intersection intersection = rayScene(ray);
 
 		if (intersection.dst < 0.0) {
-			totalLight += rayColor * vec3(0.5, 0.7, 1.0) * 0;
+			//totalLight += rayColor * vec3(0.5, 0.7, 1.0) * 0;
 			break;
 		}
 
@@ -210,7 +224,7 @@ vec3 trace(Ray ray, inout uint seed) {
 	return totalLight;
 }
 
-vec3 renderRaytraced(inout uint seed, vec2 world) {
+vec3 renderRaytraced(inout uint seed, in vec2 world) {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
 	Ray ray;
@@ -218,11 +232,13 @@ vec3 renderRaytraced(inout uint seed, vec2 world) {
 
 	for (int i = 0; i < numSamples; ++i) {
 		
-		vec2 jitter = randomInCircle(seed) * jitterStrenght / resolution.x;
+		vec2 jitter = randomInCircle(seed) * jitterStrenght / resolution.x; //xy -> sample 1, zw -> sample 2
 		vec2 jitterWorld = world + jitter;
 	
 		ray.direction = normalize(camera.direction + jitterWorld.x * camera.right + jitterWorld.y * camera.up);
+				
 		color += trace(ray, seed);
+		
 	}
 
 	return color / float(numSamples);
@@ -230,18 +246,11 @@ vec3 renderRaytraced(inout uint seed, vec2 world) {
 
 void main() {
 
-	//UV coordinates ranging from (0,0) in the top left corner of the screen to (1,1) in the bottom right corner of the screen
-	vec2 uv = gl_FragCoord.xy / resolution;
-
 	//World coordinates ranging from (-1,-1) in the bottom left corner of the screen to (1,1) in the top right corner of the screen
-	vec2 world = (gl_FragCoord.xy - resolution / 2.0) / resolution.y;
+	vec2 world = (gl_FragCoord - resolution / 2.0) / resolution.y;
 
 	uint pixelIndex = uint(gl_FragCoord.x + gl_FragCoord.y * resolution.x);
 	
-	vec3 color = renderRaytraced(pixelIndex, world);
-	
-	//vec3 color = render(ray);
-	
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(renderRaytraced(pixelIndex, world), 1.0f);
 
 }
