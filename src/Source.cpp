@@ -29,6 +29,7 @@ void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int 
 #include "Shader.h"
 #include "Initialization.h"
 #include "Bodies.h"
+#include "TraceSimple.h"
 
 void updateCamera() {
 	
@@ -40,34 +41,61 @@ void updateScene(ObjectBuffer& objectBuffer, Mesh* const meshes) {
 	rotateMesh(objectBuffer, meshes[0], 0.01f, glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -3.0f));
 }
 
-void update(ObjectBuffer& objectBuffer, Mesh* const meshes) {
+void update(GLFWwindow* const window, ObjectBuffer& objectBuffer, Mesh* const meshes, const int numMeshes) {
+	
+	static bool firstMousePress = true;
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && firstMousePress) {
+
+		firstMousePress = false;
+		double mouseX, mouseY;
+		glfwGetCursorPos(window, &mouseX, &mouseY);
+		
+		glm::vec2 mousePos = glm::vec2(mouseX - windowWidth / 2, mouseY - windowHeight / 2);
+		
+		mousePos /= windowHeight;
+		mousePos.y *= -1.0f;
+
+		int clicked = getIndexAt(mousePos, objectBuffer);
+		if (clicked < 0) return;
+		
+		if (isTriangle(clicked, objectBuffer)) {
+			int meshIndex = getMeshOf(clicked, objectBuffer, meshes, numMeshes);
+
+			if (meshIndex < 0) return;
+
+			Mesh& mesh = meshes[meshIndex];
+			
+			setMeshColor(objectBuffer, mesh, glm::vec3(1.0f, 1.0f, 1.0f));
+			
+		}
+		else {
+			objectBuffer.spheres[clicked].material.color = glm::vec3(1.0f, 1.0f, 1.0f);
+		}
+		
+		
+		
+	}
+	else if (!firstMousePress && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+		firstMousePress = true;
+	}
 	
 	updateCamera();
 	updateScene(objectBuffer, meshes);
 	computeTriangles(objectBuffer);
-
+	
 }
 
 void render(GLFWwindow* window, ObjectBuffer& objectBuffer, GLuint& VAO, GLuint& UBO, GLuint& UBOIndex, GLuint& shaderProgram) {
 	// Clear the screen buffer
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// Use the shader program
-	glUseProgram(shaderProgram);
-	
-	// Bind the vertex array object
-	glBindVertexArray(VAO);
-
 	// Pass data to the uniform buffer object
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ObjectBuffer), &objectBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, UBOIndex, UBO);
 
 	// Draw the elements using the bound buffers and shader program
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	// Unbind the vertex array object
-	glBindVertexArray(0);
-	
+		
 	// Swap the back and front buffers to display the rendered frame
 	glfwSwapBuffers(window);
 }
@@ -78,9 +106,6 @@ void exportRender(GLFWwindow* window, ObjectBuffer& objectBuffer, GLuint& VAO, G
 
 	// Use the shader program
 	glUseProgram(shaderProgram);
-
-	// Bind the vertex array object
-	glBindVertexArray(VAO);
 
 	// Set the number of samples and bounces
 	int tmpNumSamples = objectBuffer.numSamples, tmpMaxBounces = objectBuffer.maxBounces;
@@ -95,8 +120,6 @@ void exportRender(GLFWwindow* window, ObjectBuffer& objectBuffer, GLuint& VAO, G
 	// Draw the elements using the bound buffers and shader program
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-	// Unbind the vertex array object
-	glBindVertexArray(0);
 
 	// Swap the back and front buffers to display the rendered frame
 	glfwSwapBuffers(window);
@@ -122,15 +145,15 @@ int main() {
 	GLuint VBO, VAO, EBO;
 	GLuint UBO, UBOIndex; // Uniform Buffer Object to pass data to the shader
 
-	GLuint shaderProgram;
+	GLuint shaderTraceProgram;
 
 	Mesh meshes[2];
 	ObjectBuffer objectBuffer;
 	
 	initGL(window);
 
-	if (!loadShader("shaders/basic", shaderProgram)) return -1;
-	createBuffers(objectBuffer, VAO, VBO, EBO, UBO, UBOIndex, shaderProgram);
+	if (!loadShader("shaders/trace", shaderTraceProgram)) return -1;
+	createBuffers(objectBuffer, VAO, VBO, EBO, UBO, UBOIndex, shaderTraceProgram);
 
 	initBufferData(objectBuffer, meshes);
 	
@@ -144,7 +167,7 @@ int main() {
 	// Set the clear color for the screen
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-	exportRender(window, objectBuffer, VAO, UBO, UBOIndex, shaderProgram, 1000, 100);
+	exportRender(window, objectBuffer, VAO, UBO, UBOIndex, shaderTraceProgram, 1000, 100);
 
 	unsigned int frames = 0;
 
@@ -156,10 +179,10 @@ int main() {
 		// Check for input events
 		glfwPollEvents();
 
-		update(objectBuffer, meshes);
+		update(window, objectBuffer, meshes, 1);
 
 		// Render the scene
-		render(window, objectBuffer, VAO, UBO, UBOIndex, shaderProgram);
+		render(window, objectBuffer, VAO, UBO, UBOIndex, shaderTraceProgram);
 
 		++frames;
 	}

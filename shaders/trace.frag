@@ -243,7 +243,20 @@ vec3 renderRaytraced(inout uint seed, in vec2 world) {
 	return color / float(numSamples);
 }
 
+bool isNonRender() {
+	float padding = 1.f / 32.f * resolution.x;
+	vec2 size = 1.f / 4.f * resolution;
+
+	//A small region in the top left corner is reserved for the UI
+	return gl_FragCoord.x > padding && (resolution.y - gl_FragCoord.y) > padding && gl_FragCoord.x < size.x + padding && (resolution.y - gl_FragCoord.y) < size.y + padding;	
+}
+
 void main() {
+
+	if (isNonRender()) {
+		fragColor = vec4(1.0, 0.0, 1.0, 1.0);
+		return;
+	}
 
 	//World coordinates ranging from (-1,-1) in the bottom left corner of the screen to (1,1) in the top right corner of the screen
 	vec2 world = (gl_FragCoord.xy - resolution / 2.0) / resolution.y;

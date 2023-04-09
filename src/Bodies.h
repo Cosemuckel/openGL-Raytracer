@@ -168,3 +168,46 @@ void setMeshMaterial(ObjectBuffer& objectBuffer, Mesh& mesh, const Material& mat
 		objectBuffer.triangles[i].material = material;
 	}
 }
+
+void setMeshColor(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec3& color) {
+
+	if (!mesh.wasLoaded) return;
+
+	for (int i = mesh.firstTriangle; i <= mesh.lastTriangle; ++i) {
+		objectBuffer.triangles[i].material.color = color;
+	}
+}
+
+void setMeshSmoothness(ObjectBuffer& objectBuffer, Mesh& mesh, const float smoothness) {
+
+	if (!mesh.wasLoaded) return;
+
+	for (int i = mesh.firstTriangle; i <= mesh.lastTriangle; ++i) {
+		objectBuffer.triangles[i].material.smoothness = smoothness;
+	}
+}
+
+void setMeshEmission(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec4& emission) {
+
+	if (!mesh.wasLoaded) return;
+
+	for (int i = mesh.firstTriangle; i <= mesh.lastTriangle; ++i) {
+		objectBuffer.triangles[i].material.emission = emission;
+	}
+}
+
+int getMeshOf(const int triangleIndex, const ObjectBuffer& objectBuffer, const Mesh* meshes, const int numMeshes) {
+
+	for (int i = 0; i < numMeshes; ++i) {
+		if (meshes[i].firstTriangle <= triangleIndex && meshes[i].lastTriangle >= triangleIndex) {
+			return i;
+		}
+	}
+
+	return -1;
+	
+}
+
+bool isTriangle(const int index, const ObjectBuffer& objectBuffer) {
+	return index >= objectBuffer.numSpheres && index < objectBuffer.numSpheres + objectBuffer.numTriangles;
+}

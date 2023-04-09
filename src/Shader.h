@@ -60,6 +60,9 @@ bool loadShader(const char* shaderName, GLuint& shaderProgram) {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
+	// Use the shader program
+	glUseProgram(shaderProgram);
+
 	return true;
 
 }

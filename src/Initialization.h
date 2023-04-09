@@ -41,19 +41,19 @@ void createBuffers(ObjectBuffer& objectBuffer, GLuint& VAO, GLuint& VBO, GLuint&
 	// Unbind the vertex buffer object
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Unbind the vertex array object
-	glBindVertexArray(0);
-
 	// Generate a uniform buffer object
 	glGenBuffers(1, &UBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ObjectBuffer), &objectBuffer, GL_DYNAMIC_DRAW);
-
+	
 	// Get the index of the uniform buffer object in the shader program
 	UBOIndex = glGetUniformBlockIndex(shaderProgram, "ObjectBuffer");
 
 	// Set the uniform buffer object to be bound to the binding point 0
 	glUniformBlockBinding(shaderProgram, UBOIndex, 0);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, UBOIndex, UBO);
+
 }
 
 void freeBuffers(GLuint& VAO, GLuint& VBO, GLuint& EBO, GLuint& UBO) {
@@ -103,6 +103,11 @@ void initGL(GLFWwindow*& window) {
 	// Initialize GLEW library
 	glewExperimental = GL_TRUE;
 	glewInit();
+
+	// Enable blending
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
 
 	// Set the viewport to the size of the window
 	glViewport(0, 0, windowWidth, windowHeight);

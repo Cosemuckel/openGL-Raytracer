@@ -8,29 +8,30 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Set compiler flags to -O2
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add source files
 set(SOURCES
-    src/Source.cpp
-	src/Bodies.h
-	src/Shader.h
-	src/Initialization.h
-	src/Structures.h
-)
+ "src/Source.cpp"
+ "src/Bodies.h"
+ "src/Shader.h"
+ "src/Initialization.h"
+ "src/Structures.h"
+ "src/TraceSimple.h")
 
 # Add GLFW library
-add_subdirectory(dependencies/glfw-3.3.8)
-include_directories(dependencies/glfw-3.3.8/include)
+add_subdirectory("dependencies/glfw-3.3.8")
+include_directories("dependencies/glfw-3.3.8/include")
 
 # Add GLEW library
-add_subdirectory(dependencies/glew-2.2.0/build/cmake)
-include_directories(dependencies/glew-2.2.0/include)
+add_subdirectory("dependencies/glew-2.2.0/build/cmake")
+include_directories("dependencies/glew-2.2.0/include")
 
 # Add glm headers
-include_directories(dependencies/g-truc-glm-bf71a83)
+include_directories("dependencies/g-truc-glm-bf71a83")
 
 # Add stb headers
-include_directories(dependencies/stb)
+include_directories("dependencies/stb")
 
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
