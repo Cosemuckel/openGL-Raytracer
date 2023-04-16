@@ -6,7 +6,8 @@ struct Material {
 	glm::vec3 color;
 	float smoothness;
 
-	glm::vec4 emission;
+	glm::vec3 emission;
+	float padding;
 };
 
 struct Sphere {
@@ -59,8 +60,7 @@ struct Camera {
 };
 
 //The object buffer can be passed as a uniform buffer to the shader
-template <int MAX_SPHERES, int MAX_TRIANGLES>
-struct tObjectBuffer {
+struct ObjectBuffer {
 
 	glm::vec2 resolution; // 1, 2
 	int numSpheres; // 3
@@ -69,12 +69,10 @@ struct tObjectBuffer {
 	int maxBounces;
 	int numSamples;
 	float jitterStrenght;
-	float pad1;
+	float pad0;
 
 	Camera camera;
 
 	Sphere spheres[MAX_SPHERES];
 	Triangle triangles[MAX_TRIANGLES];
 };
-
-typedef tObjectBuffer<MAX_SPHERES, MAX_TRIANGLES> ObjectBuffer;

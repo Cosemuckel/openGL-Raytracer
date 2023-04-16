@@ -17,7 +17,7 @@ set(SOURCES
  "src/Shader.h"
  "src/Initialization.h"
  "src/Structures.h"
- "src/TraceSimple.h")
+ "src/Selection.h")
 
 # Add GLFW library
 add_subdirectory("dependencies/glfw-3.3.8")
@@ -40,8 +40,12 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} glew_s)
 
-# Copy the executable to the root directory
+# Copy the executable and debug info(.pdb) to the root directory
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
 		$<TARGET_FILE:${PROJECT_NAME}>
-		${CMAKE_SOURCE_DIR}/$<TARGET_FILE_NAME:${PROJECT_NAME}>)
+		${CMAKE_SOURCE_DIR}/$<TARGET_FILE_NAME:${PROJECT_NAME}>
+	COMMAND ${CMAKE_COMMAND} -E copy
+	$<TARGET_PDB_FILE:${PROJECT_NAME}>
+		${CMAKE_SOURCE_DIR}/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>
+	)

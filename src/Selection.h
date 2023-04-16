@@ -8,7 +8,7 @@ struct Ray {
 	glm::vec3 direction;
 };
 
-int raySphere(const Ray& ray, const Sphere& sphere) {
+float raySphere(const Ray& ray, const Sphere& sphere) {
 	//Returns the distance to the intersection point
 	//Returns -1 if there is no intersection
 
@@ -18,11 +18,12 @@ int raySphere(const Ray& ray, const Sphere& sphere) {
 	float c = glm::dot(oc, oc) - sphere.radius * sphere.radius;
 
 	float discriminant = b * b - 4 * a * c;
+
+	return (discriminant < 0) ? -1 : (-b - sqrt(discriminant)) / (2.0f * a);
 	
-	return (discriminant <= 0) ? -1 : (-b - sqrt(discriminant)) / (2.0f * a);	
 }
 
-int rayTriangle(const Ray& ray, const Triangle& triangle) {
+float rayTriangle(const Ray& ray, const Triangle& triangle) {
 	//Returns the distance to the intersection point
 	//Returns -1 if there is no intersection
 
@@ -44,8 +45,8 @@ int rayTriangle(const Ray& ray, const Triangle& triangle) {
 	return glm::dot(triangle.edge2, qvec) * invDet;
 }
 
-int getIndexAt(const glm::vec2 coordinate, const ObjectBuffer& objectBuffer) {
-	//Returns the index of the closet clicked object
+int getROIndexAt(const glm::vec2 coordinate, const ObjectBuffer& objectBuffer) {
+	//Returns the index of the closet clicked render object
 	int closestObject = -1;
 	float closestDistance = 10e10f;
 	
@@ -65,9 +66,10 @@ int getIndexAt(const glm::vec2 coordinate, const ObjectBuffer& objectBuffer) {
 		float distance = rayTriangle(ray, objectBuffer.triangles[i]);
 		if (distance > 0 && distance < closestDistance) {
 			closestDistance = distance;
-			closestObject = i + objectBuffer.numSpheres;
+			closestObject = i + MAX_SPHERES;
 		}
 	}
+	
 
 	return closestObject;
 }

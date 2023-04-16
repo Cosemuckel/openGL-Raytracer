@@ -32,18 +32,11 @@
 *.out
 *.app
 
-# Build folder
-Renderer/build/*
+# Other
+*.pdb
 
-### VisualStudio ###
-# Ignore .vs folder
-.vs/
+#Visual Studio
+.vs
 
-# Ignore .vscode folder
-.vscode/
-
-# Ignore visual studio files
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
+#Build directory
+/build

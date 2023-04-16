@@ -6,7 +6,8 @@ struct Material {
 	vec3 color;
 	float smoothness;
 	
-	vec4 emission; // color, intensity	
+	vec3 emission;
+	float padding;
 };
 
 struct Sphere {
@@ -56,7 +57,7 @@ layout(std140) uniform ObjectBuffer {
 
 	vec2 resolution;
 	int numSpheres;
-	int numTriagngles;
+	int numTriangles;
 
 	int maxBounces;
 	int numSamples;
@@ -65,8 +66,8 @@ layout(std140) uniform ObjectBuffer {
 
 	Camera camera;
 
-	Sphere spheres[10];
-	Triangle triangles[100];
+	Sphere spheres[1];
+	Triangle triangles[20];
 };
 
 struct Ray {
@@ -81,7 +82,7 @@ struct Intersection {
 	vec3 position;
 };
 
-void raySphere(Ray ray, Sphere sphere, inout Intersection intersection) {
+void raySphere(Ray ray, Sphere sphere, inout float distance, inout bool hit) {
 
 	vec3 oc = ray.origin - sphere.center;
 
@@ -92,30 +93,30 @@ void raySphere(Ray ray, Sphere sphere, inout Intersection intersection) {
 	float discriminant = (b * b) - (4.0 * a * c);
 		
 	float dst = discriminant <= 0.0 ? -1 : (-b - sqrt(discriminant)) / (2.0 * a);
-
-	intersection.dst = dst;
-	intersection.position = ray.origin + ray.direction * dst;
-	intersection.normal = normalize(intersection.position - sphere.center);
-	intersection.material = sphere.material;
+	
+	if (dst > 0 && (distance < 0 || dst < distance)) {
+		distance = dst;
+		hit = true;
+	}
 
 }
 
-void rayTriangle(Ray ray, Triangle triangle, inout Intersection intersection) {
+void rayTriangle(Ray ray, Triangle triangle, inout float distance, inout bool hit) {
 	vec3 edge1 = triangle.edge1;
 	vec3 edge2 = triangle.edge2;
 
 	vec3 p = cross(ray.direction, edge2);
 	float det = dot(edge1, p);
 
-	if (abs(det) < 10e-6) return;
+	if (det < 10e-6) return;
 
-	float invDet = 1.0f / det;
 	vec3 t = ray.origin - triangle.v0;
 	
 	float u = dot(t, p);
 
 	if (det < u || u < 0.0f) return;
 	
+	float invDet = 1.0f / det;
 	u *= invDet;
 
 	vec3 q = cross(t, edge1);	
@@ -125,51 +126,68 @@ void rayTriangle(Ray ray, Triangle triangle, inout Intersection intersection) {
 	if (v < 0.0f || u + v > 1.0f) return;
 
 	float dst = dot(edge2, q) * invDet;
-
-	intersection.dst = dst;
-	intersection.material = triangle.material;
-	intersection.position = ray.origin + dst * ray.direction;
-	intersection.normal = triangle.normal;
+	
+	if (dst > 0 && (distance < 0 || dst < distance)) {
+		distance = dst;
+		hit = true;
+	}
 }
+
 
 Intersection rayScene(Ray ray) {
 
-	Intersection closestIntersection;
-	Intersection currentIntersection;
-	
-	closestIntersection.dst = -1;
+	int closestHitSphereIndex = -1;
+	float closestHitSphereDistance = -1;
+	int closestHitTriangleIndex = -1;
+	float closestHitTriangleDistance = -1;
+	bool hit = false;
 
 	for (int i = 0; i < numSpheres; ++i) {
-		raySphere(ray, spheres[i], currentIntersection);
 
-		if (currentIntersection.dst > 0 && (closestIntersection.dst < 0 || currentIntersection.dst < closestIntersection.dst)) {
-			closestIntersection = currentIntersection;
+		Sphere sphere = spheres[i];
+						
+		raySphere(ray, sphere, closestHitSphereDistance, hit);
+
+		if (hit) {
+			closestHitSphereIndex = i;
+			hit = false;
+		}
+		
+	}
+
+	for (int i = 0; i < numTriangles; ++i) {		
+	
+		Triangle triangle = triangles[i];
+	
+		rayTriangle(ray, triangle, closestHitTriangleDistance, hit);
+	
+		if (hit) {
+			closestHitTriangleIndex = i;
+			hit = false;
 		}
 	}
 
-	for (int i = 0; i < numTriagngles; ++i) {
+	bool triangleHit = closestHitTriangleDistance > 0;
 
-		currentIntersection.dst = -1;
+	bool sphereCloser = closestHitSphereDistance > 0 && (!triangleHit || closestHitSphereDistance < closestHitTriangleDistance);
 
-		rayTriangle(ray, triangles[i], currentIntersection);
+	Intersection intersection;
 
-		if (currentIntersection.dst > 0 && (closestIntersection.dst < 0 || currentIntersection.dst < closestIntersection.dst)) {
-			closestIntersection = currentIntersection;
-		}
-	}
+	if (sphereCloser) {
+		intersection.material = spheres[closestHitSphereIndex].material;
+		intersection.dst = closestHitSphereDistance;
+		intersection.normal = normalize(ray.origin + ray.direction * closestHitSphereDistance - spheres[closestHitSphereIndex].center);
+	} else if (triangleHit) {
+		intersection.material = triangles[closestHitTriangleIndex].material;
+		intersection.dst = closestHitTriangleDistance;
+		intersection.normal = triangles[closestHitTriangleIndex].normal;
+	} else {
+		intersection.dst = -1;
+	}	
 	
-	return closestIntersection;
+	intersection.position = ray.origin + ray.direction * intersection.dst;
 	
-}
-
-vec3 render(Ray ray) {
-	Intersection intersection = rayScene(ray);
-	
-	if (intersection.dst > 0) {
-		return intersection.material.color;
-	}
-
-	return vec3(0.5, 0.7, 1.0);	
+	return intersection;	
 }
 
 float random(inout uint seed) {
@@ -187,21 +205,22 @@ vec3 randomDirection(inout uint seed) {
 }
 
 vec2 randomInCircle(inout uint seed) {
-	float angle = random(seed) * 6.28318530718;
-	vec2 point = vec2(cos(angle), sin(angle));
-	return point * sqrt(random(seed));
+	float r = sqrt(random(seed));
+	float a = 6.28318530718 * random(seed);
+	return vec2(r * cos(a), r * sin(a));
 }
 
 vec3 trace(Ray ray, inout uint seed) {
 	
 	vec3 rayColor = vec3(1.f);
 	vec3 totalLight = vec3(0.f);
-
+	Intersection intersection;
+	
 	for (int i = 0; i < maxBounces; ++i) {
-		Intersection intersection = rayScene(ray);
+	
+		intersection = rayScene(ray);
 
 		if (intersection.dst < 0.0) {
-			//totalLight += rayColor * vec3(0.5, 0.7, 1.0) * 0;
 			break;
 		}
 
@@ -213,9 +232,7 @@ vec3 trace(Ray ray, inout uint seed) {
 		vec3 specularDir = reflect(ray.direction, intersection.normal);
 		ray.direction = mix(diffuseDir, specularDir, material.smoothness);
 		
-		vec3 emission = material.emission.xyz * material.emission.w;
-
-		totalLight += rayColor * emission;
+		totalLight += rayColor * material.emission;
 		rayColor *= material.color;
 
 	}
@@ -223,15 +240,15 @@ vec3 trace(Ray ray, inout uint seed) {
 	return totalLight;
 }
 
-vec3 renderRaytraced(inout uint seed, in vec2 world) {
-	vec3 color = vec3(0.0, 0.0, 0.0);
+vec3 renderRaytraced(inout uint seed, vec2 world) {
+	vec3 color = vec3(0.0);
 
 	Ray ray;
 	ray.origin = camera.position; //The ray starts at the camera position
 
 	for (int i = 0; i < numSamples; ++i) {
-		
-		vec2 jitter = randomInCircle(seed) * jitterStrenght / resolution.x; //xy -> sample 1, zw -> sample 2
+		 
+		vec2 jitter = randomInCircle(seed) * jitterStrenght;
 		vec2 jitterWorld = world + jitter;
 	
 		ray.direction = normalize(camera.direction + jitterWorld.x * camera.right + jitterWorld.y * camera.up);
@@ -243,24 +260,56 @@ vec3 renderRaytraced(inout uint seed, in vec2 world) {
 	return color / float(numSamples);
 }
 
-bool isNonRender() {
-	float padding = 1.f / 32.f * resolution.x;
-	vec2 size = 1.f / 4.f * resolution;
+int renderMode() {
+	float margin = 15.0;
+	vec2 size = vec2(200.0, 160.0);
 
-	//A small region in the top left corner is reserved for the UI
-	return gl_FragCoord.x > padding && (resolution.y - gl_FragCoord.y) > padding && gl_FragCoord.x < size.x + padding && (resolution.y - gl_FragCoord.y) < size.y + padding;	
+	// A small region in the top left corner is reserved for the UI
+	if (gl_FragCoord.x <= margin || (resolution.y - gl_FragCoord.y) <= margin || 
+	    gl_FragCoord.x >= size.x + margin || (resolution.y - gl_FragCoord.y) >= size.y + margin) {
+		// outside
+		return 0;
+	} else if (gl_FragCoord.x < margin + 1.0 || (resolution.y - gl_FragCoord.y) < margin + 1.0 || 
+	           gl_FragCoord.x > size.x + margin - 1.0 || (resolution.y - gl_FragCoord.y) > size.y + margin - 1.0) {
+		// on the border
+		return -1;
+	} else {
+		// inside
+		return 1;
+	}
+}
+
+
+vec3 hsv2rgb(vec3 c) {
+	vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 void main() {
 
-	if (isNonRender()) {
-		fragColor = vec4(1.0, 0.0, 1.0, 1.0);
+	int mode = renderMode();
+
+	if (mode == 1) {
+		float margin = 15.0;
+		vec2 size = vec2(200.0, 160.0);
+		
+		vec2 pos = vec2(gl_FragCoord.x - margin, (resolution.y - gl_FragCoord.y) - margin);
+		vec2 uv = pos / size;
+
+		fragColor = vec4(hsv2rgb(vec3(uv.x, sqrt(1 - uv.y), 1.f)), 1.f);
+		
+		return;
+	}
+	
+	if (mode == -1) {
+		fragColor = vec4(0.f);
 		return;
 	}
 
 	//World coordinates ranging from (-1,-1) in the bottom left corner of the screen to (1,1) in the top right corner of the screen
 	vec2 world = (gl_FragCoord.xy - resolution / 2.0) / resolution.y;
-
+	
 	uint pixelIndex = uint(gl_FragCoord.x + gl_FragCoord.y * resolution.x);
 	
 	fragColor = vec4(renderRaytraced(pixelIndex, world), 1.0f);

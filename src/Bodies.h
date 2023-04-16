@@ -88,7 +88,7 @@ bool loadMesh(ObjectBuffer& objectBuffer, const char* path, Mesh& mesh) {
 			indices[currentIndex++] = std::stoi(arg3) - 1;
 		}
 
-		if (currentVertex >= 3 * MAX_TRIANGLES || currentIndex >= 3 * MAX_TRIANGLES) {
+		if (currentVertex > 3 * MAX_TRIANGLES || currentIndex > 3 * MAX_TRIANGLES) {
 			delete[] vertices;
 			delete[] indices;
 			std::cerr << "Error: Too many vertices or indices in mesh file\n";
@@ -196,10 +196,10 @@ void setMeshEmission(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec4& em
 	}
 }
 
-int getMeshOf(const int triangleIndex, const ObjectBuffer& objectBuffer, const Mesh* meshes, const int numMeshes) {
+int getMeshOf(const int ROIndex, const ObjectBuffer& objectBuffer, const Mesh* meshes, const int numMeshes) {
 
 	for (int i = 0; i < numMeshes; ++i) {
-		if (meshes[i].firstTriangle <= triangleIndex && meshes[i].lastTriangle >= triangleIndex) {
+		if (meshes[i].firstTriangle <= ROIndex && meshes[i].lastTriangle >= ROIndex) {
 			return i;
 		}
 	}
@@ -208,6 +208,6 @@ int getMeshOf(const int triangleIndex, const ObjectBuffer& objectBuffer, const M
 	
 }
 
-bool isTriangle(const int index, const ObjectBuffer& objectBuffer) {
-	return index >= objectBuffer.numSpheres && index < objectBuffer.numSpheres + objectBuffer.numTriangles;
+bool isTriangle(const int ROIndex, const ObjectBuffer& objectBuffer) {
+	return ROIndex >= MAX_SPHERES && ROIndex < MAX_SPHERES + MAX_TRIANGLES;
 }

@@ -68,10 +68,10 @@ void initBufferData(ObjectBuffer& objectBuffer, Mesh* const meshes) {
 	objectBuffer.numSpheres = 0;
 	objectBuffer.numTriangles = 0;
 
-	objectBuffer.maxBounces = 5;
-	objectBuffer.numSamples = 52;
+	objectBuffer.maxBounces = MAX_BOUNCES;
+	objectBuffer.numSamples = NUM_SAMPLES;
 
-	objectBuffer.jitterStrenght = .8f;
+	objectBuffer.jitterStrenght = .8f / windowWidth;
 
 	//Camera facing forward
 	objectBuffer.camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -90,8 +90,6 @@ void initGL(GLFWwindow*& window) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Disable window resizing
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	// Create window and make it the current OpenGL context
 	window = glfwCreateWindow(windowWidth, windowHeight, "OpenGL", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
@@ -99,6 +97,9 @@ void initGL(GLFWwindow*& window) {
 	// Set window callbacks
 	glfwSetErrorCallback(glfwErrorCallback);
 	glfwSetKeyCallback(window, glfwKeyCallback);
+	glfwSetFramebufferSizeCallback(window, glfwFramebufferSizeCallback);
+	
+	// glfwSwapInterval(1); // Enable vsync
 
 	// Initialize GLEW library
 	glewExperimental = GL_TRUE;
