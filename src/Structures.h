@@ -70,7 +70,7 @@ struct ObjectBuffer {
 	int maxBounces;
 	int numSamples;
 	float jitterStrenght;
-	float pad0;
+	int noGUI;
 
 	Camera camera;
 

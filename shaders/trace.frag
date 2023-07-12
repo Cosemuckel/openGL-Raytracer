@@ -62,7 +62,7 @@ layout(std140) uniform ObjectBuffer {
 	int maxBounces;
 	int numSamples;
 	float jitterStrenght;
-	float pad1;
+	int noGUI;
 
 	Camera camera;
 
@@ -288,7 +288,7 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
 
-	int mode = renderMode();
+	int mode = noGUI == 1 ? 0 : renderMode();
 
 	if (mode == 1) {
 		float margin = 15.0;

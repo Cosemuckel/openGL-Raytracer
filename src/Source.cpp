@@ -207,6 +207,8 @@ void exportRender(ObjectBuffer& objectBuffer, GLuint& VAO, GLuint& UBO, GLuint& 
 	objectBuffer.resolution = glm::vec2(resolution.x, resolution.y);
 	objectBuffer.jitterStrenght *= windowWidth;
 	objectBuffer.jitterStrenght /= resolution.x;
+	
+	objectBuffer.noGUI = 1;
 		
 	//We now need to do the usual rendering process
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -219,7 +221,7 @@ void exportRender(ObjectBuffer& objectBuffer, GLuint& VAO, GLuint& UBO, GLuint& 
 	unsigned char* data = new unsigned char[resolution.x * resolution.y * 3];
 	glReadPixels(0, 0, resolution.x, resolution.y, GL_RGB, GL_UNSIGNED_BYTE, data);
 	
-	std::string filename = "render_" + std::to_string(numSamples) + "_" + std::to_string(maxBounces) + "__" + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) + ".png";
+	std::string filename = "render_" + std::to_string(numSamples) + "S_" + std::to_string(maxBounces) + "B_" + std::to_string(resolution.x) + "x" + std::to_string(resolution.y) + ".png";
 	stbi_flip_vertically_on_write(true);
 	stbi_write_png(filename.c_str(), resolution.x, resolution.y, 3, data, resolution.x * 3);
 
@@ -236,6 +238,8 @@ void exportRender(ObjectBuffer& objectBuffer, GLuint& VAO, GLuint& UBO, GLuint& 
 	objectBuffer.resolution = glm::vec2(windowWidth, windowHeight);
 	objectBuffer.jitterStrenght *= resolution.x;
 	objectBuffer.jitterStrenght /= windowWidth;
+
+	objectBuffer.noGUI = 0;
 	
 	//We now need to delete the frame buffer and texture
 	glDeleteFramebuffers(1, &frameBuffer);

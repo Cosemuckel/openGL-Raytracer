@@ -73,6 +73,8 @@ void initBufferData(ObjectBuffer& objectBuffer, Mesh* const meshes) {
 
 	objectBuffer.jitterStrenght = .9f / windowWidth;
 
+	objectBuffer.noGUI = 0;
+
 	//Camera facing forward
 	objectBuffer.camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	objectBuffer.camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
