@@ -43,6 +43,7 @@ struct Mesh {
 	int firstTriangle;
 	int lastTriangle;
 	bool wasLoaded;
+	glm::vec3 center;
 };
 
 struct Camera {

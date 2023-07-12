@@ -33,6 +33,9 @@ include_directories("dependencies/g-truc-glm-bf71a83")
 # Add stb headers
 include_directories("dependencies/stb")
 
+# Set the output directory to the root directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
@@ -40,12 +43,3 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} glew_s)
 
-# Copy the executable and debug info(.pdb) to the root directory
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy
-		$<TARGET_FILE:${PROJECT_NAME}>
-		${CMAKE_SOURCE_DIR}/$<TARGET_FILE_NAME:${PROJECT_NAME}>
-	COMMAND ${CMAKE_COMMAND} -E copy
-	$<TARGET_PDB_FILE:${PROJECT_NAME}>
-		${CMAKE_SOURCE_DIR}/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>
-	)

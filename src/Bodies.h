@@ -117,6 +117,7 @@ bool loadMesh(ObjectBuffer& objectBuffer, const char* path, Mesh& mesh) {
 
 	mesh.lastTriangle = objectBuffer.numTriangles - 1;
 	mesh.wasLoaded = true;
+	mesh.center = glm::vec3(0.f);
 
 
 	delete[] vertices;
@@ -134,6 +135,8 @@ void scaleMesh(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec3& scale, c
 		objectBuffer.triangles[i].v1 = (objectBuffer.triangles[i].v1 - center) * scale + center;
 		objectBuffer.triangles[i].v2 = (objectBuffer.triangles[i].v2 - center) * scale + center;
 	}
+
+	mesh.center = (mesh.center - center) * scale + center;
 }
 
 void translateMesh(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec3& translation) {
@@ -145,6 +148,8 @@ void translateMesh(ObjectBuffer& objectBuffer, Mesh& mesh, const glm::vec3& tran
 		objectBuffer.triangles[i].v1 += translation;
 		objectBuffer.triangles[i].v2 += translation;
 	}
+
+	mesh.center += translation;
 }
 
 void rotateMesh(ObjectBuffer& objectBuffer, Mesh& mesh, const float angle, const glm::vec3& axis, const glm::vec3& center = glm::vec3(0.f)) {
@@ -158,6 +163,8 @@ void rotateMesh(ObjectBuffer& objectBuffer, Mesh& mesh, const float angle, const
 		objectBuffer.triangles[i].v1 = glm::vec3(rotation * glm::vec4(objectBuffer.triangles[i].v1 - center, 1.0f)) + center;
 		objectBuffer.triangles[i].v2 = glm::vec3(rotation * glm::vec4(objectBuffer.triangles[i].v2 - center, 1.0f)) + center;
 	}
+
+	mesh.center = glm::vec3(rotation * glm::vec4(mesh.center - center, 1.0f)) + center;
 }
 
 void setMeshMaterial(ObjectBuffer& objectBuffer, Mesh& mesh, const Material& material) {
@@ -210,4 +217,43 @@ int getMeshOf(const int ROIndex, const ObjectBuffer& objectBuffer, const Mesh* m
 
 bool isTriangle(const int ROIndex, const ObjectBuffer& objectBuffer) {
 	return ROIndex >= MAX_SPHERES && ROIndex < MAX_SPHERES + MAX_TRIANGLES;
+}
+
+int getSelection(const ObjectBuffer& objectBuffer, Mesh* const meshes, const int numMeshes, const glm::vec2 mousePos) {
+
+	const int clicked = getROIndexAt(mousePos, objectBuffer);
+
+	if (clicked < 0) return -1;
+
+	if (isTriangle(clicked, objectBuffer)) {
+		const int meshIndex = getMeshOf(clicked - MAX_SPHERES, objectBuffer, meshes, numMeshes);
+		if (meshIndex < 0) return -1;
+		return meshIndex + MAX_SPHERES;
+	}
+
+	return clicked;
+}
+
+void translateObject(ObjectBuffer& objectBuffer, Mesh* const meshes, const int index, const glm::vec3& translation) {
+
+	if (index >= 0) {
+		if (index < MAX_SPHERES) {
+			objectBuffer.spheres[index].center += translation;
+		}
+		else {
+			translateMesh(objectBuffer, meshes[index - MAX_SPHERES], translation);
+		}
+	}
+}
+
+void setObjectColor(ObjectBuffer& objectBuffer, Mesh* const meshes, const int index, const glm::vec3& color) {
+
+	if (index >= 0) {
+		if (index < MAX_SPHERES) {
+			objectBuffer.spheres[index].material.color = color;
+		}
+		else {
+			setMeshColor(objectBuffer, meshes[index - MAX_SPHERES], color);
+		}
+	}
 }

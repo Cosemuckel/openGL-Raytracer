@@ -8,6 +8,9 @@
 *.o
 *.obj
 
+# Exept in /meshes
+!/meshes/*.obj
+
 # Precompiled Headers
 *.gch
 *.pch

@@ -71,7 +71,7 @@ void initBufferData(ObjectBuffer& objectBuffer, Mesh* const meshes) {
 	objectBuffer.maxBounces = MAX_BOUNCES;
 	objectBuffer.numSamples = NUM_SAMPLES;
 
-	objectBuffer.jitterStrenght = .8f / windowWidth;
+	objectBuffer.jitterStrenght = .9f / windowWidth;
 
 	//Camera facing forward
 	objectBuffer.camera.position = glm::vec3(0.0f, 0.0f, 0.0f);

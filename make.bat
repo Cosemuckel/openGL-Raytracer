@@ -1,8 +1,5 @@
 @echo off
 
-set CXX=g++
-set CXXFLAGS=-std=c++11 -Wall -Wextra -pedantic
-
 set RED=[0;31m
 set GREEN=[0;32m
 set CYAN=[0;36m

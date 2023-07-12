@@ -39,15 +39,13 @@ bool selectColor(const double mouseX, const double mouseY, glm::vec3& color) {
 	const static float pickerHeight = 160.f;
 
 	//Check if the mouse is in the color picker
-	if (mouseX < margin || mouseX > margin + pickerWidth || mouseY < margin || mouseY > margin + pickerHeight) {
-		return false;
-	}
+	if (mouseX < margin || mouseX > margin + pickerWidth || mouseY < margin || mouseY > margin + pickerHeight) return false;
 
 	//Calculate the color
-	float hue = (mouseX - margin) / pickerWidth;
-	float saturation = (mouseY - margin) / pickerHeight;
-	
+	float hue = (static_cast<float>(mouseX) - margin) / pickerWidth;
+	float saturation = (static_cast<float>(mouseY) - margin) / pickerHeight;
+
 	color = hsv2rgb(glm::vec3(hue, 1.f - saturation, 1.0f));
-	
+
 	return true;
 }

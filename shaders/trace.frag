@@ -66,8 +66,8 @@ layout(std140) uniform ObjectBuffer {
 
 	Camera camera;
 
-	Sphere spheres[1];
-	Triangle triangles[20];
+	Sphere spheres[2];
+	Triangle triangles[30];
 };
 
 struct Ray {
